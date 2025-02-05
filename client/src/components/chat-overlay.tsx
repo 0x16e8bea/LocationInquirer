@@ -35,20 +35,27 @@ export function ChatOverlay({ currentLocation }: ChatOverlayProps) {
 
   const chatMutation = useMutation({
     mutationFn: async (data: { message: string }) => {
-      const response = await apiRequest("POST", "/api/chat", {
-        ...data,
-        location: currentLocation,
-      });
-      return response.json();
+      try {
+        const response = await apiRequest("POST", "/api/chat", {
+          ...data,
+          response: "",
+          location: currentLocation,
+        });
+        return response.json();
+      } catch (error) {
+        console.error('Chat mutation error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
       form.reset();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Chat mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to send message",
+        description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
     },
@@ -57,11 +64,11 @@ export function ChatOverlay({ currentLocation }: ChatOverlayProps) {
   const formatResponse = (response: string) => {
     try {
       const parsed = JSON.parse(response);
-      // Convert the parsed JSON object to a formatted string
       return Object.entries(parsed)
         .map(([key, value]) => `${key}: ${value}`)
-        .join('\n');
-    } catch {
+        .join('\n\n');
+    } catch (error) {
+      console.error('Response parsing error:', error);
       return response;
     }
   };

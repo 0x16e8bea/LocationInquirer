@@ -10,7 +10,11 @@ export async function generateLocationResponse(message: string, location: { lat:
       messages: [
         {
           role: "system",
-          content: `You are a helpful AI assistant for location-based queries. The user is looking at location: ${location.address || `${location.lat}, ${location.lng}`}. Provide relevant information about this location based on the user's query.`,
+          content: `You are a helpful AI assistant for location-based queries. The user is looking at location: ${location.address || `${location.lat}, ${location.lng}`}. 
+          Provide relevant information about this location based on the user's query. Format your response as a JSON object with these fields:
+          - description: A detailed response to the user's query
+          - points_of_interest: Notable places or features nearby (if relevant)
+          - fun_fact: An interesting fact about the area (if available)`,
         },
         {
           role: "user",
@@ -25,7 +29,12 @@ export async function generateLocationResponse(message: string, location: { lat:
       throw new Error("No content in response");
     }
 
-    return JSON.parse(content);
+    try {
+      return JSON.parse(content);
+    } catch (parseError) {
+      console.error("Failed to parse OpenAI response:", content);
+      throw new Error("Invalid response format from OpenAI");
+    }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     throw new Error(`Failed to generate response: ${errorMessage}`);
