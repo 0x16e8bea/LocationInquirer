@@ -10,9 +10,9 @@ export async function generateLocationResponse(message: string, location: { lat:
       messages: [
         {
           role: "system",
-          content: `You are a helpful AI assistant for location-based queries. The user is looking at location: ${location.address || `${location.lat}, ${location.lng}`}. 
+          content: `You are a helpful AI assistant for location-based queries. The user is looking at ${location.address || `coordinates (${location.lat}, ${location.lng})`}. 
           Provide relevant information about this location based on the user's query. Format your response as a JSON object with these fields:
-          - description: A detailed response to the user's query
+          - description: A detailed response to the user's query about the location
           - points_of_interest: Notable places or features nearby (if relevant)
           - fun_fact: An interesting fact about the area (if available)`,
         },
