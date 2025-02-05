@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GoogleMap } from "@react-google-maps/api";
 
 const defaultCenter = {
@@ -11,17 +11,26 @@ const mapStyle = {
   height: "100vh",
 };
 
+interface Place {
+  name: string;
+  rating?: number;
+  types: string[];
+  vicinity: string;
+}
+
 interface MapViewProps {
-  onLocationChange: (location: { lat: number; lng: number; address?: string }) => void;
+  onLocationChange: (location: { lat: number; lng: number; address?: string; places?: Place[] }) => void;
 }
 
 export function MapView({ onLocationChange }: MapViewProps) {
   const mapRef = useRef<google.maps.Map>();
   const geocoderRef = useRef<google.maps.Geocoder>();
+  const placesServiceRef = useRef<google.maps.places.PlacesService>();
 
   const onLoad = (map: google.maps.Map) => {
     mapRef.current = map;
     geocoderRef.current = new google.maps.Geocoder();
+    placesServiceRef.current = new google.maps.places.PlacesService(map);
   };
 
   const getAddressForLocation = async (lat: number, lng: number) => {
@@ -40,6 +49,32 @@ export function MapView({ onLocationChange }: MapViewProps) {
     }
   };
 
+  const getNearbyPlaces = async (lat: number, lng: number): Promise<Place[]> => {
+    if (!placesServiceRef.current) return [];
+
+    return new Promise((resolve) => {
+      const request: google.maps.places.PlaceSearchRequest = {
+        location: { lat, lng },
+        radius: 500,
+        type: 'point_of_interest'
+      };
+
+      placesServiceRef.current.nearbySearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          const places = results.slice(0, 5).map(place => ({
+            name: place.name || '',
+            rating: place.rating,
+            types: place.types || [],
+            vicinity: place.vicinity || ''
+          }));
+          resolve(places);
+        } else {
+          resolve([]);
+        }
+      });
+    });
+  };
+
   useEffect(() => {
     if (mapRef.current) {
       const center = mapRef.current.getCenter();
@@ -47,12 +82,15 @@ export function MapView({ onLocationChange }: MapViewProps) {
         const lat = center.lat();
         const lng = center.lng();
 
-        // Get address for initial location
-        getAddressForLocation(lat, lng).then(address => {
+        Promise.all([
+          getAddressForLocation(lat, lng),
+          getNearbyPlaces(lat, lng)
+        ]).then(([address, places]) => {
           onLocationChange({
             lat,
             lng,
-            address
+            address,
+            places
           });
         });
       }
@@ -72,11 +110,15 @@ export function MapView({ onLocationChange }: MapViewProps) {
             const lat = center.lat();
             const lng = center.lng();
 
-            getAddressForLocation(lat, lng).then(address => {
+            Promise.all([
+              getAddressForLocation(lat, lng),
+              getNearbyPlaces(lat, lng)
+            ]).then(([address, places]) => {
               onLocationChange({
                 lat,
                 lng,
-                address
+                address,
+                places
               });
             });
           }
