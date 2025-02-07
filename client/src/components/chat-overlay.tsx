@@ -65,7 +65,14 @@ export function ChatOverlay({ currentLocation }: ChatOverlayProps) {
     try {
       const parsed = JSON.parse(response);
       return Object.entries(parsed)
-        .map(([key, value]) => `${key}: ${value}`)
+        .map(([key, value]) => {
+          if (key === 'points_of_interest' && Array.isArray(value)) {
+            return `${key}:\n${value.map((poi: any) => 
+              `- ${poi.name}${poi.rating ? ` (Rating: ${poi.rating}/5)` : ''}\n  ${poi.vicinity || ''}`
+            ).join('\n')}`;
+          }
+          return `${key}: ${value}`;
+        })
         .join('\n\n');
     } catch (error) {
       console.error('Response parsing error:', error);
