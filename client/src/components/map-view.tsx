@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { GoogleMap } from "@react-google-maps/api";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 
 const defaultCenter = {
   lat: 40.7128,
@@ -20,9 +20,14 @@ interface Place {
 
 interface MapViewProps {
   onLocationChange: (location: { lat: number; lng: number; address?: string; places?: Place[] }) => void;
+  markers: Array<{
+    position: { lat: number; lng: number };
+    label: string;
+    title: string;
+  }>;
 }
 
-export function MapView({ onLocationChange }: MapViewProps) {
+export function MapView({ onLocationChange, markers }: MapViewProps) {
   const mapRef = useRef<google.maps.Map>();
   const geocoderRef = useRef<google.maps.Geocoder>();
   const placesServiceRef = useRef<google.maps.places.PlacesService>();
@@ -135,6 +140,20 @@ export function MapView({ onLocationChange }: MapViewProps) {
         disableDefaultUI: true,
         zoomControl: true,
       }}
-    />
+    >
+      {markers.map((marker, index) => (
+        <Marker
+          key={index}
+          position={marker.position}
+          label={{
+            text: marker.label,
+            color: "white",
+            fontSize: "14px",
+            fontWeight: "bold"
+          }}
+          title={marker.title}
+        />
+      ))}
+    </GoogleMap>
   );
 }

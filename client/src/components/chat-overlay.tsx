@@ -13,9 +13,10 @@ import { MessageSquare, Loader2 } from "lucide-react";
 
 interface ChatOverlayProps {
   currentLocation: { lat: number; lng: number };
+  onPoiClick: (pois: any[]) => void;
 }
 
-export function ChatOverlay({ currentLocation }: ChatOverlayProps) {
+export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,8 +68,9 @@ export function ChatOverlay({ currentLocation }: ChatOverlayProps) {
       return Object.entries(parsed)
         .map(([key, value]) => {
           if (key === 'points_of_interest' && Array.isArray(value)) {
-            return `Points of Interest:\n${value.map((poi: any) => 
-              `- ${poi.name}: ${poi.description}`
+            // Call onPoiClick with the points of interest data
+            return `Points of Interest:\n${value.map((poi: any, index: number) => 
+              `- <button class="text-left text-blue-600 hover:underline" onclick="window.poiClick(${index})">${index + 1}. ${poi.name}: ${poi.description}</button>`
             ).join('\n')}`;
           }
           return `${key}: ${value}`;
@@ -79,6 +81,23 @@ export function ChatOverlay({ currentLocation }: ChatOverlayProps) {
       return response;
     }
   };
+
+  // Add global click handler for POI buttons
+  if (typeof window !== 'undefined' && !window.poiClick) {
+    (window as any).poiClick = (index: number) => {
+      const lastChat = chats[chats.length - 1];
+      if (lastChat) {
+        try {
+          const parsed = JSON.parse(lastChat.response);
+          if (parsed.points_of_interest) {
+            onPoiClick(parsed.points_of_interest);
+          }
+        } catch (error) {
+          console.error('Error parsing chat response:', error);
+        }
+      }
+    };
+  }
 
   return (
     <Card className="fixed bottom-4 right-4 w-96 bg-white/90 backdrop-blur transition-all duration-200 shadow-lg">
@@ -106,9 +125,10 @@ export function ChatOverlay({ currentLocation }: ChatOverlayProps) {
                   <p className="bg-primary/10 rounded-lg p-2 mb-2">
                     {chat.message}
                   </p>
-                  <p className="bg-secondary/10 rounded-lg p-2 whitespace-pre-line">
-                    {formatResponse(chat.response)}
-                  </p>
+                  <div 
+                    className="bg-secondary/10 rounded-lg p-2 whitespace-pre-line"
+                    dangerouslySetInnerHTML={{ __html: formatResponse(chat.response) }}
+                  />
                 </div>
               ))
             )}
