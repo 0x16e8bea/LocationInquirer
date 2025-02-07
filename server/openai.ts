@@ -41,8 +41,13 @@ export async function generateLocationResponse(
           }.${placesInfo}
           Provide relevant information about this location based on the user's query. Format your response as a JSON object with these fields:
           - description: A detailed response to the user's query about the location
-          - points_of_interest: Notable places or features nearby (if relevant)
-          - fun_fact: An interesting fact about the area (if available)`,
+          - points_of_interest: An array of objects containing information about notable nearby places, each with 'name' and 'description' fields
+          - fun_fact: An interesting fact about the area (if available)
+
+          When listing points of interest, include them in this format:
+          "points_of_interest": [
+            { "name": "Place Name", "description": "Brief description or highlight" }
+          ]`,
         },
         {
           role: "user",

@@ -67,8 +67,8 @@ export function ChatOverlay({ currentLocation }: ChatOverlayProps) {
       return Object.entries(parsed)
         .map(([key, value]) => {
           if (key === 'points_of_interest' && Array.isArray(value)) {
-            return `${key}:\n${value.map((poi: any) => 
-              `- ${poi.name}${poi.rating ? ` (Rating: ${poi.rating}/5)` : ''}\n  ${poi.vicinity || ''}`
+            return `Points of Interest:\n${value.map((poi: any) => 
+              `- ${poi.name}: ${poi.description}`
             ).join('\n')}`;
           }
           return `${key}: ${value}`;
