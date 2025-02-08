@@ -20,13 +20,29 @@ export default function Home() {
   const [markers, setMarkers] = useState<Marker[]>([]);
 
   const handlePoiClick = (pois: any[]) => {
-    if (!pois) return;
+    if (!pois || !Array.isArray(pois)) return;
 
-    const newMarkers = pois.map((poi, index) => ({
-      position: poi.coordinates,
-      label: (index + 1).toString(),
-      title: poi.name,
-    }));
+    console.log('Received POIs:', pois); // Debug log
+
+    const newMarkers = pois.map((poi, index) => {
+      console.log('Processing POI:', poi); // Debug log
+      const coordinates = poi.geometry?.location || poi.coordinates;
+      if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
+        console.warn('Invalid coordinates for POI:', poi);
+        return null;
+      }
+
+      return {
+        position: {
+          lat: coordinates.lat,
+          lng: coordinates.lng
+        },
+        label: (index + 1).toString(),
+        title: poi.name
+      };
+    }).filter(Boolean) as Marker[];
+
+    console.log('Created markers:', newMarkers); // Debug log
     setMarkers(newMarkers);
   };
 

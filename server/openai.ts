@@ -50,10 +50,10 @@ export async function generateLocationResponse(
           - points_of_interest: An array of objects containing information about notable nearby places, each with:
             - name: The place name
             - description: Brief description or highlight
-            - coordinates: { lat: number, lng: number } (use the exact coordinates provided in the places info)
-          - fun_fact: An interesting fact about the area (if available)
+            - coordinates: { lat: number, lng: number } If there's a geometry.location in the places info, use those exact coordinates
+           - fun_fact: An interesting fact about the area (if available)
 
-          Important: For points_of_interest, use ONLY the places and coordinates provided in the places info.`,
+          Important: For points_of_interest, use ONLY the places from the places info, and ensure you include their exact coordinates from the geometry.location field.`,
         },
         {
           role: "user",
@@ -69,7 +69,9 @@ export async function generateLocationResponse(
     }
 
     try {
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+      console.log('OpenAI Response:', parsed); // Debug log
+      return parsed;
     } catch (parseError) {
       console.error("Failed to parse OpenAI response:", content);
       throw new Error("Invalid response format from OpenAI");

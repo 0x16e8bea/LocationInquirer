@@ -89,6 +89,7 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
         try {
           const parsed = JSON.parse(lastChat.response);
           if (parsed.points_of_interest && Array.isArray(parsed.points_of_interest)) {
+            console.log('Clicking POI, full response:', parsed); 
             onPoiClick(parsed.points_of_interest);
           }
         } catch (error) {
