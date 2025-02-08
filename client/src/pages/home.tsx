@@ -23,7 +23,7 @@ export default function Home() {
     if (!pois) return;
 
     const newMarkers = pois.map((poi, index) => ({
-      position: { lat: currentLocation.lat, lng: currentLocation.lng },
+      position: poi.coordinates,
       label: (index + 1).toString(),
       title: poi.name,
     }));

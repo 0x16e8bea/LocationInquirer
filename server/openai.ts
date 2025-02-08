@@ -8,6 +8,12 @@ interface Place {
   rating?: number;
   types: string[];
   vicinity: string;
+  geometry?: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
 }
 
 export async function generateLocationResponse(
@@ -26,7 +32,7 @@ export async function generateLocationResponse(
             (p) =>
               `- ${p.name} (${p.vicinity})${
                 p.rating ? ` - Rating: ${p.rating}/5` : ""
-              }`
+              } at coordinates ${p.geometry?.location.lat}, ${p.geometry?.location.lng}`
           )
           .join("\n")}`
       : "";
@@ -41,13 +47,13 @@ export async function generateLocationResponse(
           }.${placesInfo}
           Provide relevant information about this location based on the user's query. Format your response as a JSON object with these fields:
           - description: A detailed response to the user's query about the location
-          - points_of_interest: An array of objects containing information about notable nearby places, each with 'name' and 'description' fields
+          - points_of_interest: An array of objects containing information about notable nearby places, each with:
+            - name: The place name
+            - description: Brief description or highlight
+            - coordinates: { lat: number, lng: number } (use the exact coordinates provided in the places info)
           - fun_fact: An interesting fact about the area (if available)
 
-          When listing points of interest, include them in this format:
-          "points_of_interest": [
-            { "name": "Place Name", "description": "Brief description or highlight" }
-          ]`,
+          Important: For points_of_interest, use ONLY the places and coordinates provided in the places info.`,
         },
         {
           role: "user",

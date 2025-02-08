@@ -68,7 +68,6 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
       return Object.entries(parsed)
         .map(([key, value]) => {
           if (key === 'points_of_interest' && Array.isArray(value)) {
-            // Call onPoiClick with the points of interest data
             return `Points of Interest:\n${value.map((poi: any, index: number) => 
               `- <button class="text-left text-blue-600 hover:underline" onclick="window.poiClick(${index})">${index + 1}. ${poi.name}: ${poi.description}</button>`
             ).join('\n')}`;
@@ -89,7 +88,7 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
       if (lastChat) {
         try {
           const parsed = JSON.parse(lastChat.response);
-          if (parsed.points_of_interest) {
+          if (parsed.points_of_interest && Array.isArray(parsed.points_of_interest)) {
             onPoiClick(parsed.points_of_interest);
           }
         } catch (error) {
