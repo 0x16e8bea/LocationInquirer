@@ -149,9 +149,17 @@ export function MapView({ onLocationChange, markers }: MapViewProps) {
             text: marker.label,
             color: "white",
             fontSize: "14px",
-            fontWeight: "bold"
+            fontWeight: "bold",
+            className: "marker-label"
           }}
           title={marker.title}
+          icon={{
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: "#FF0000",
+            fillOpacity: 1,
+            strokeWeight: 0,
+            scale: 12,
+          }}
         />
       ))}
     </GoogleMap>
