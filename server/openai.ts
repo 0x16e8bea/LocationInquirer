@@ -1,6 +1,16 @@
 import OpenAI from "openai";
+import * as dotenv from 'dotenv';
+import { resolve } from 'path';
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+// Load environment variables
+const envPath = '/Users/mikkelmogensen/Desktop/Project/LocationInquirer/.env';
+console.log('Loading OpenAI env from:', envPath);
+dotenv.config({ path: envPath });
+
+if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is missing. Please check your .env file.');
+}
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface Place {
