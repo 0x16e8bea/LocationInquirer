@@ -34,7 +34,8 @@ export function registerRoutes(app: Express): Server {
           lat: result.data.location.lat,
           lng: result.data.location.lng,
           address: result.data.location.address,
-        }
+        },
+        result.data.systemPrompt
       );
 
       const chat = await storage.createChat({

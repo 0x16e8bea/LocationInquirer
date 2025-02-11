@@ -9,8 +9,48 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { MessageSquare, Loader2, Trash2 } from "lucide-react";
+import { MessageSquare, Loader2, Trash2, ChevronLeft, ChevronRight, User } from "lucide-react";
 import React from "react";
+
+interface Personality {
+  id: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
+}
+
+const personalities: Personality[] = [
+  {
+    id: 'adventurous',
+    name: 'Adventure Seeker',
+    description: 'Choose me for thrilling activities and off-the-beaten-path experiences',
+    systemPrompt: 'You are an adventurous travel guide who loves to recommend exciting and unique experiences.',
+  },
+  {
+    id: 'foodie',
+    name: 'Food Explorer',
+    description: 'Let me guide you to the best local cuisine and hidden food gems',
+    systemPrompt: 'You are a food-loving guide who specializes in local cuisine and culinary experiences.',
+  },
+  {
+    id: 'history',
+    name: 'History Buff',
+    description: 'Discover the rich history and cultural heritage of places',
+    systemPrompt: 'You are a history expert who loves sharing fascinating historical facts and cultural insights.',
+  },
+  {
+    id: 'spontaneous',
+    name: 'Free Spirit',
+    description: 'Go with the flow and discover unexpected delights',
+    systemPrompt: 'You are a spontaneous guide who loves suggesting unique and unexpected experiences.',
+  },
+  {
+    id: 'culture',
+    name: 'Culture Enthusiast',
+    description: 'Experience local traditions, arts, and authentic cultural experiences',
+    systemPrompt: 'You are a culturally aware guide who specializes in authentic local experiences and traditions.',
+  },
+];
 
 interface ChatOverlayProps {
   currentLocation: { lat: number; lng: number };
@@ -20,14 +60,31 @@ interface ChatOverlayProps {
 
 export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOverlayProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [selectedPersonalityIndex, setSelectedPersonalityIndex] = useState(0);
+  const [hasStartedChat, setHasStartedChat] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const currentPersonality = personalities[selectedPersonalityIndex];
+
+  const handlePrevPersonality = () => {
+    setSelectedPersonalityIndex((prev) => 
+      prev === 0 ? personalities.length - 1 : prev - 1
+    );
+  };
+
+  const handleNextPersonality = () => {
+    setSelectedPersonalityIndex((prev) => 
+      prev === personalities.length - 1 ? 0 : prev + 1
+    );
+  };
 
   const form = useForm({
     resolver: zodResolver(insertChatSchema),
     defaultValues: {
       message: "",
       response: "",
+      systemPrompt: currentPersonality.systemPrompt,
       location: currentLocation,
     },
   });
@@ -40,8 +97,9 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
     mutationFn: async (data: { message: string }) => {
       try {
         const response = await apiRequest("POST", "/api/chat", {
-          ...data,
+          message: data.message,
           response: "",
+          systemPrompt: currentPersonality.systemPrompt,
           location: currentLocation,
         });
         return response.json();
@@ -52,7 +110,12 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
-      form.reset();
+      form.reset({
+        message: "",
+        response: "",
+        systemPrompt: currentPersonality.systemPrompt,
+        location: currentLocation,
+      });
     },
     onError: (error) => {
       console.error('Chat mutation error:', error);
@@ -63,6 +126,16 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
       });
     },
   });
+
+  // Update form defaults when personality or location changes
+  useEffect(() => {
+    form.reset({
+      message: form.getValues("message"),
+      response: "",
+      systemPrompt: currentPersonality.systemPrompt,
+      location: currentLocation,
+    });
+  }, [currentPersonality, currentLocation, form]);
 
   const formatResponse = (response: string, chatId: number) => {
     try {
@@ -160,28 +233,75 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
 
       {isExpanded && (
         <>
-          <ScrollArea className="h-[400px] p-4">
-            {isLoading ? (
-              <div className="flex justify-center p-4">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : (
-              chats.map((chat: Chat) => (
-                <div key={chat.id} className="mb-4">
-                  <p className="bg-primary/10 rounded-lg p-2 mb-2">
-                    {chat.message}
-                  </p>
-                  <div 
-                    className="bg-secondary/10 rounded-lg p-2 whitespace-pre-line"
-                    dangerouslySetInnerHTML={{ __html: formatResponse(chat.response, chat.id) }}
-                  />
+          {!hasStartedChat && chats.length === 0 ? (
+            <div className="p-6 flex flex-col items-center gap-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePrevPersonality}
+                  title="Previous personality"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-8 w-8" />
+                  </div>
+                  <h3 className="font-semibold">{currentPersonality.name}</h3>
                 </div>
-              ))
-            )}
-          </ScrollArea>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNextPersonality}
+                  title="Next personality"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                {currentPersonality.description}
+              </p>
+              <p className="text-center text-xs text-muted-foreground mt-2">
+                Use the arrows to choose your travel guide personality, then start chatting!
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="p-2 flex items-center gap-2 border-b bg-primary/5">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-4 w-4" />
+                </div>
+                <span className="text-sm font-medium">{currentPersonality.name}</span>
+              </div>
+              <ScrollArea className="h-[400px] p-4">
+                {isLoading ? (
+                  <div className="flex justify-center p-4">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  chats.map((chat: Chat) => (
+                    <div key={chat.id} className="mb-4">
+                      <p className="bg-primary/10 rounded-lg p-2 mb-2">
+                        {chat.message}
+                      </p>
+                      <div 
+                        className="bg-secondary/10 rounded-lg p-2 whitespace-pre-line"
+                        dangerouslySetInnerHTML={{ __html: formatResponse(chat.response, chat.id) }}
+                      />
+                    </div>
+                  ))
+                )}
+              </ScrollArea>
+            </>
+          )}
 
           <form
-            onSubmit={form.handleSubmit((data) => chatMutation.mutate(data))}
+            onSubmit={(e) => {
+              e.preventDefault();
+              setHasStartedChat(true);
+              form.handleSubmit((data) => chatMutation.mutate(data))(e);
+            }}
             className="p-4 border-t flex gap-2"
           >
             <Input
