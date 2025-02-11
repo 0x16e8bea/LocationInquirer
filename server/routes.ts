@@ -10,6 +10,16 @@ export function registerRoutes(app: Express): Server {
     res.json(chats);
   });
 
+  app.delete("/api/chats", async (_req, res) => {
+    try {
+      await storage.clearChats();
+      res.json({ message: "Chat history cleared" });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   app.post("/api/chat", async (req, res) => {
     const result = insertChatSchema.safeParse(req.body);
     if (!result.success) {

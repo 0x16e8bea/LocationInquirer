@@ -9,15 +9,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { MessageSquare, Loader2 } from "lucide-react";
+import { MessageSquare, Loader2, Trash2 } from "lucide-react";
 import React from "react";
 
 interface ChatOverlayProps {
   currentLocation: { lat: number; lng: number };
-  onPoiClick: (pois: any[]) => void;
+  onPoiClick: (pois: any[], selectedIndex?: number) => void;
+  onClearChat: () => void;
 }
 
-export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
+export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOverlayProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -63,14 +64,14 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
     },
   });
 
-  const formatResponse = (response: string) => {
+  const formatResponse = (response: string, chatId: number) => {
     try {
       const parsed = JSON.parse(response);
       return Object.entries(parsed)
         .map(([key, value]) => {
           if (key === 'points_of_interest' && Array.isArray(value)) {
             return `Points of Interest:\n${value.map((poi: any, index: number) => 
-              `- <button class="text-left text-blue-600 hover:underline" data-poi-index="${index}">${index + 1}. ${poi.name}: ${poi.description}</button>`
+              `- <button class="text-left text-blue-600 hover:underline" data-poi-index="${index}" data-chat-id="${chatId}">${index + 1}. ${poi.name}: ${poi.description}</button>`
             ).join('\n')}`;
           }
           return `${key}: ${value}`;
@@ -86,13 +87,15 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
   useEffect(() => {
     const handlePOIClick = (event: MouseEvent) => {
       const button = (event.target as HTMLElement).closest('button');
-      if (!button || !button.hasAttribute('data-poi-index')) return;
+      if (!button || !button.hasAttribute('data-poi-index') || !button.hasAttribute('data-chat-id')) return;
       
       const index = parseInt(button.getAttribute('data-poi-index') || '0', 10);
-      const lastChat = chats[chats.length - 1];
-      if (lastChat) {
+      const chatId = parseInt(button.getAttribute('data-chat-id') || '0', 10);
+      
+      const chat = chats.find(c => c.id === chatId);
+      if (chat) {
         try {
-          const parsed = JSON.parse(lastChat.response);
+          const parsed = JSON.parse(chat.response);
           if (parsed.points_of_interest && Array.isArray(parsed.points_of_interest)) {
             const pois = parsed.points_of_interest.map((poi: any) => ({
               ...poi,
@@ -101,7 +104,7 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
                 lng: poi.geometry?.location?.lng
               }
             }));
-            onPoiClick(pois);
+            onPoiClick(pois, index);
           }
         } catch (error) {
           console.error('Error parsing chat response:', error);
@@ -113,17 +116,46 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
     return () => document.removeEventListener('click', handlePOIClick);
   }, [chats, onPoiClick]);
 
+  const handleClearChat = async () => {
+    try {
+      await apiRequest("DELETE", "/api/chats");
+      queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
+      onClearChat();
+      toast({
+        title: "Chat cleared",
+        description: "Chat history has been cleared.",
+      });
+    } catch (error) {
+      console.error('Clear chat error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear chat history. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card className="fixed bottom-4 right-4 w-96 bg-white/90 backdrop-blur transition-all duration-200 shadow-lg">
       <div className="p-4 flex justify-between items-center border-b">
         <h2 className="font-semibold text-lg">Location Assistant</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <MessageSquare className="h-5 w-5" />
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClearChat}
+            title="Clear chat history"
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <MessageSquare className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {isExpanded && (
@@ -141,7 +173,7 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
                   </p>
                   <div 
                     className="bg-secondary/10 rounded-lg p-2 whitespace-pre-line"
-                    dangerouslySetInnerHTML={{ __html: formatResponse(chat.response) }}
+                    dangerouslySetInnerHTML={{ __html: formatResponse(chat.response, chat.id) }}
                   />
                 </div>
               ))

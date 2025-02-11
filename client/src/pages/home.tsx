@@ -18,9 +18,14 @@ export default function Home() {
     lng: -74.0060,
   });
   const [markers, setMarkers] = useState<Marker[]>([]);
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string>();
 
-  const handlePoiClick = (pois: any[]) => {
+  const handlePoiClick = (pois: any[], selectedIndex?: number) => {
     if (!pois || !Array.isArray(pois)) return;
+
+    // Clear previous markers and selected marker
+    setMarkers([]);
+    setSelectedMarkerId(undefined);
 
     const newMarkers = pois.map((poi, index) => {
       if (!poi.coordinates || typeof poi.coordinates.lat !== 'number' || typeof poi.coordinates.lng !== 'number') {
@@ -38,8 +43,17 @@ export default function Home() {
       };
     }).filter(Boolean) as Marker[];
 
-    console.log('Setting markers:', newMarkers);
+    // Set new markers and selected marker
     setMarkers(newMarkers);
+    if (typeof selectedIndex === 'number') {
+      setSelectedMarkerId(selectedIndex.toString());
+    }
+  };
+
+  const handleClearChat = () => {
+    // Clear markers and selected marker
+    setMarkers([]);
+    setSelectedMarkerId(undefined);
   };
 
   return (
@@ -48,10 +62,15 @@ export default function Home() {
       libraries={libraries}
     >
       <div className="relative h-screen">
-        <MapView onLocationChange={setCurrentLocation} markers={markers} />
+        <MapView 
+          onLocationChange={setCurrentLocation} 
+          markers={markers}
+          selectedMarkerId={selectedMarkerId}
+        />
         <ChatOverlay 
           currentLocation={currentLocation} 
           onPoiClick={handlePoiClick}
+          onClearChat={handleClearChat}
         />
       </div>
     </LoadScript>

@@ -3,6 +3,7 @@ import { chats, type Chat, type InsertChat } from "@shared/schema";
 export interface IStorage {
   getChats(): Promise<Chat[]>;
   createChat(chat: InsertChat): Promise<Chat>;
+  clearChats(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -32,6 +33,11 @@ export class MemStorage implements IStorage {
     };
     this.chats.set(id, chat);
     return chat;
+  }
+
+  async clearChats(): Promise<void> {
+    this.chats.clear();
+    this.currentId = 1;
   }
 }
 

@@ -25,9 +25,10 @@ interface MapViewProps {
     label: string;
     title: string;
   }>;
+  selectedMarkerId?: string;
 }
 
-export function MapView({ onLocationChange, markers }: MapViewProps) {
+export function MapView({ onLocationChange, markers, selectedMarkerId }: MapViewProps) {
   const mapRef = useRef<google.maps.Map>();
   const geocoderRef = useRef<google.maps.Geocoder>();
   const placesServiceRef = useRef<google.maps.places.PlacesService>();
@@ -102,6 +103,17 @@ export function MapView({ onLocationChange, markers }: MapViewProps) {
     }
   }, [onLocationChange]);
 
+  // Focus on a marker when selectedMarkerId changes
+  useEffect(() => {
+    if (mapRef.current && selectedMarkerId) {
+      const selectedMarker = markers.find((m, index) => index.toString() === selectedMarkerId);
+      if (selectedMarker) {
+        mapRef.current.panTo(selectedMarker.position);
+        mapRef.current.setZoom(15);
+      }
+    }
+  }, [selectedMarkerId, markers]);
+
   return (
     <GoogleMap
       mapContainerStyle={mapStyle}
@@ -160,6 +172,7 @@ export function MapView({ onLocationChange, markers }: MapViewProps) {
             strokeWeight: 0,
             scale: 12,
           }}
+          animation={index.toString() === selectedMarkerId ? google.maps.Animation.BOUNCE : undefined}
         />
       ))}
     </GoogleMap>
