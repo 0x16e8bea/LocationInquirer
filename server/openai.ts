@@ -38,7 +38,8 @@ export async function generateLocationResponse(
     lng: number;
     address?: string;
     places?: Place[];
-  }
+  },
+  systemPrompt: string = 'You are a helpful AI assistant for location-based queries.'
 ) {
   try {
     const placesInfo = location.places
@@ -57,16 +58,24 @@ export async function generateLocationResponse(
       messages: [
         {
           role: "system",
-          content: `You are a helpful AI assistant for location-based queries. The user is looking at ${
-            location.address || `coordinates (${location.lat}, ${location.lng})`
-          }.${placesInfo}
-          Provide relevant information about this location based on the user's query. Format your response as a JSON object with these fields:
-          - description: A detailed response to the user's query about the location
-          - points_of_interest: An array of objects containing information about notable nearby places, each with:
+          content: `${systemPrompt}
+
+          You are currently looking at ${location.address || `coordinates (${location.lat}, ${location.lng})`}.
+          ${placesInfo}
+
+          When responding:
+          1. Stay in character according to your personality and expertise
+          2. Focus your recommendations based on your specific interests and knowledge
+          3. Use language and tone that matches your character
+          4. Only recommend places that are relevant to your expertise
+
+          Format your response as a JSON object with these fields:
+          - description: A detailed response in your unique voice, focusing on aspects relevant to your expertise
+          - points_of_interest: An array of objects containing information about notable nearby places that match your interests, each with:
             - name: The place name
-            - description: Brief description or highlight
+            - description: Brief description highlighting aspects relevant to your expertise
             - coordinates: { lat: number, lng: number } If there's a geometry.location in the places info, use those exact coordinates
-           - fun_fact: An interesting fact about the area (if available)
+          - fun_fact: An interesting fact about the area related to your specific expertise
 
           Important: For points_of_interest, use ONLY the places from the places info, and ensure you include their exact coordinates from the geometry.location field.`,
         },
@@ -76,6 +85,7 @@ export async function generateLocationResponse(
         },
       ],
       response_format: { type: "json_object" },
+      temperature: 0.7,
     });
 
     const content = response.choices[0].message.content;
@@ -85,7 +95,6 @@ export async function generateLocationResponse(
 
     try {
       const parsed = JSON.parse(content);
-      console.log('OpenAI Response:', parsed); // Debug log
       return parsed;
     } catch (parseError) {
       console.error("Failed to parse OpenAI response:", content);
