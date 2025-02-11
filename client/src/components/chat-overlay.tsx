@@ -107,16 +107,54 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
 
   const currentPersonality = personalities[selectedPersonalityIndex];
 
+  const handleClearChat = async () => {
+    try {
+      await apiRequest("DELETE", "/api/chats");
+      queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
+      onClearChat();
+      toast({
+        title: "Chat cleared",
+        description: "Chat history has been cleared.",
+      });
+    } catch (error) {
+      console.error('Clear chat error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear chat history. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const silentClearChat = async () => {
+    try {
+      await apiRequest("DELETE", "/api/chats");
+      queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
+      onClearChat();
+    } catch (error) {
+      console.error('Clear chat error:', error);
+    }
+  };
+
   const handlePrevPersonality = () => {
     setSelectedPersonalityIndex((prev) => 
       prev === 0 ? personalities.length - 1 : prev - 1
     );
+    silentClearChat();
+    setHasStartedChat(false);
   };
 
   const handleNextPersonality = () => {
     setSelectedPersonalityIndex((prev) => 
       prev === personalities.length - 1 ? 0 : prev + 1
     );
+    silentClearChat();
+    setHasStartedChat(false);
+  };
+
+  const handleReturnToSelection = () => {
+    silentClearChat();
+    setHasStartedChat(false);
   };
 
   const form = useForm({
@@ -229,25 +267,6 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
     return () => document.removeEventListener('click', handlePOIClick);
   }, [chats, onPoiClick]);
 
-  const handleClearChat = async () => {
-    try {
-      await apiRequest("DELETE", "/api/chats");
-      queryClient.invalidateQueries({ queryKey: ["/api/chats"] });
-      onClearChat();
-      toast({
-        title: "Chat cleared",
-        description: "Chat history has been cleared.",
-      });
-    } catch (error) {
-      console.error('Clear chat error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to clear chat history. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <Card className="fixed bottom-4 right-4 w-96 bg-white/90 backdrop-blur transition-all duration-200 shadow-lg">
       <div className="p-4 flex justify-between items-center border-b">
@@ -308,11 +327,21 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
             </div>
           ) : (
             <>
-              <div className="p-2 flex items-center gap-2 border-b bg-primary/5">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="h-4 w-4" />
+              <div className="p-2 flex items-center justify-between border-b bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-medium">{currentPersonality.name}</span>
                 </div>
-                <span className="text-sm font-medium">{currentPersonality.name}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReturnToSelection}
+                  className="text-xs"
+                >
+                  Change Guide
+                </Button>
               </div>
               <ScrollArea className="h-[400px] p-4">
                 {isLoading ? (
