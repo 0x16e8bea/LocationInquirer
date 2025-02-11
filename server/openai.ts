@@ -1,9 +1,14 @@
 import OpenAI from "openai";
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Load environment variables
-const envPath = '/Users/mikkelmogensen/Desktop/Project/LocationInquirer/.env';
+const envPath = resolve(__dirname, '..', '.env');
 console.log('Loading OpenAI env from:', envPath);
 dotenv.config({ path: envPath });
 
