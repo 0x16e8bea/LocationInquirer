@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertChatSchema, type Chat } from "@shared/schema";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { MessageSquare, Loader2 } from "lucide-react";
+import React from "react";
 
 interface ChatOverlayProps {
   currentLocation: { lat: number; lng: number };
@@ -69,7 +70,7 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
         .map(([key, value]) => {
           if (key === 'points_of_interest' && Array.isArray(value)) {
             return `Points of Interest:\n${value.map((poi: any, index: number) => 
-              `- <button class="text-left text-blue-600 hover:underline" onclick="window.poiClick(${index})">${index + 1}. ${poi.name}: ${poi.description}</button>`
+              `- <button class="text-left text-blue-600 hover:underline" data-poi-index="${index}">${index + 1}. ${poi.name}: ${poi.description}</button>`
             ).join('\n')}`;
           }
           return `${key}: ${value}`;
@@ -81,23 +82,36 @@ export function ChatOverlay({ currentLocation, onPoiClick }: ChatOverlayProps) {
     }
   };
 
-  // Add global click handler for POI buttons
-  if (typeof window !== 'undefined' && !window.poiClick) {
-    (window as any).poiClick = (index: number) => {
+  // Add click event listener for POI buttons
+  useEffect(() => {
+    const handlePOIClick = (event: MouseEvent) => {
+      const button = (event.target as HTMLElement).closest('button');
+      if (!button || !button.hasAttribute('data-poi-index')) return;
+      
+      const index = parseInt(button.getAttribute('data-poi-index') || '0', 10);
       const lastChat = chats[chats.length - 1];
       if (lastChat) {
         try {
           const parsed = JSON.parse(lastChat.response);
           if (parsed.points_of_interest && Array.isArray(parsed.points_of_interest)) {
-            console.log('Clicking POI, full response:', parsed); 
-            onPoiClick(parsed.points_of_interest);
+            const pois = parsed.points_of_interest.map((poi: any) => ({
+              ...poi,
+              coordinates: poi.coordinates || { 
+                lat: poi.geometry?.location?.lat,
+                lng: poi.geometry?.location?.lng
+              }
+            }));
+            onPoiClick(pois);
           }
         } catch (error) {
           console.error('Error parsing chat response:', error);
         }
       }
     };
-  }
+
+    document.addEventListener('click', handlePOIClick);
+    return () => document.removeEventListener('click', handlePOIClick);
+  }, [chats, onPoiClick]);
 
   return (
     <Card className="fixed bottom-4 right-4 w-96 bg-white/90 backdrop-blur transition-all duration-200 shadow-lg">

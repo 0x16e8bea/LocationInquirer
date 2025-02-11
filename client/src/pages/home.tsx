@@ -22,27 +22,23 @@ export default function Home() {
   const handlePoiClick = (pois: any[]) => {
     if (!pois || !Array.isArray(pois)) return;
 
-    console.log('Received POIs:', pois); // Debug log
-
     const newMarkers = pois.map((poi, index) => {
-      console.log('Processing POI:', poi); // Debug log
-      const coordinates = poi.geometry?.location || poi.coordinates;
-      if (!coordinates || typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number') {
+      if (!poi.coordinates || typeof poi.coordinates.lat !== 'number' || typeof poi.coordinates.lng !== 'number') {
         console.warn('Invalid coordinates for POI:', poi);
         return null;
       }
 
       return {
         position: {
-          lat: coordinates.lat,
-          lng: coordinates.lng
+          lat: poi.coordinates.lat,
+          lng: poi.coordinates.lng
         },
         label: (index + 1).toString(),
         title: poi.name
       };
     }).filter(Boolean) as Marker[];
 
-    console.log('Created markers:', newMarkers); // Debug log
+    console.log('Setting markers:', newMarkers);
     setMarkers(newMarkers);
   };
 
