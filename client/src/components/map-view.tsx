@@ -142,13 +142,6 @@ export function MapView({ onLocationChange, markers, selectedMarkerId }: MapView
         }
       }}
       options={{
-        styles: [
-          {
-            featureType: "all",
-            elementType: "all",
-            stylers: [{ saturation: -100 }]
-          }
-        ],
         disableDefaultUI: true,
         zoomControl: true,
       }}

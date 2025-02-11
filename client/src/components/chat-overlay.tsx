@@ -268,7 +268,7 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
   }, [chats, onPoiClick]);
 
   return (
-    <Card className="fixed bottom-4 right-4 w-96 bg-white/90 backdrop-blur transition-all duration-200 shadow-lg">
+    <Card className="fixed bottom-4 left-4 w-96 bg-white/90 backdrop-blur transition-all duration-200 shadow-lg">
       <div className="p-4 flex justify-between items-center border-b">
         <h2 className="font-semibold text-lg">Location Assistant</h2>
         <div className="flex gap-2">
@@ -322,8 +322,14 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
                 {currentPersonality.description}
               </p>
               <p className="text-center text-xs text-muted-foreground mt-2">
-                Use the arrows to choose your travel guide personality, then start chatting!
+                Use the arrows to choose your travel guide personality
               </p>
+              <Button 
+                className="mt-4"
+                onClick={() => setHasStartedChat(true)}
+              >
+                Start Chat
+              </Button>
             </div>
           ) : (
             <>
@@ -365,30 +371,31 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
             </>
           )}
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setHasStartedChat(true);
-              form.handleSubmit((data) => chatMutation.mutate(data))(e);
-            }}
-            className="p-4 border-t flex gap-2"
-          >
-            <Input
-              {...form.register("message")}
-              placeholder="Ask about this location..."
-              className="flex-1"
-            />
-            <Button
-              type="submit"
-              disabled={chatMutation.isPending}
+          {hasStartedChat && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                form.handleSubmit((data) => chatMutation.mutate(data))(e);
+              }}
+              className="p-4 border-t flex gap-2"
             >
-              {chatMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Send"
-              )}
-            </Button>
-          </form>
+              <Input
+                {...form.register("message")}
+                placeholder="Ask about this location..."
+                className="flex-1"
+              />
+              <Button
+                type="submit"
+                disabled={chatMutation.isPending}
+              >
+                {chatMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Send"
+                )}
+              </Button>
+            </form>
+          )}
         </>
       )}
     </Card>
