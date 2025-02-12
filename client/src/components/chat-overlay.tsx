@@ -250,10 +250,7 @@ export function ChatOverlay({ currentLocation, onPoiClick, onClearChat }: ChatOv
           if (parsed.points_of_interest && Array.isArray(parsed.points_of_interest)) {
             const pois = parsed.points_of_interest.map((poi: any) => ({
               ...poi,
-              coordinates: poi.coordinates || { 
-                lat: poi.geometry?.location?.lat,
-                lng: poi.geometry?.location?.lng
-              }
+              coordinates: poi.coordinates
             }));
             onPoiClick(pois, index);
           }
