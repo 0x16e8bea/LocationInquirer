@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import Map, { Marker, ViewStateChangeEvent } from 'react-map-gl';
+import * as ReactMapGL from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import type { MapRef } from 'react-map-gl';
+
+const Map = ReactMapGL.Map;
+const Marker = ReactMapGL.Marker;
+type MapRef = ReactMapGL.MapRef;
+type ViewStateChangeEvent = ReactMapGL.ViewStateChangeEvent;
 
 const MAPBOX_TOKEN = 'pk.eyJ1IjoiMHgxNmU4YmVhIiwiYSI6ImNtNGFhc3FvYjA2cHYycXNlNGNlaTZmMTMifQ.I6cJRlsfe9C718-URherGg';
 
@@ -37,7 +41,9 @@ export function MapView({ onLocationChange, markers, selectedMarkerId }: MapView
   const [viewState, setViewState] = useState({
     latitude: defaultCenter.lat,
     longitude: defaultCenter.lng,
-    zoom: 12
+    zoom: 15,
+    pitch: 45,
+    bearing: 0
   });
 
   const getAddressForLocation = async (lat: number, lng: number) => {
@@ -104,16 +110,63 @@ export function MapView({ onLocationChange, markers, selectedMarkerId }: MapView
     }
   }, [selectedMarkerId, markers]);
 
+  // Add terrain and 3D buildings when map loads
+  const onMapLoad = () => {
+    if (!mapRef.current) return;
+    const map = mapRef.current.getMap();
+
+    // Add terrain
+    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+
+    // Add 3D buildings
+    map.addLayer({
+      'id': '3d-buildings',
+      'source': 'composite',
+      'source-layer': 'building',
+      'filter': ['==', 'extrude', 'true'],
+      'type': 'fill-extrusion',
+      'minzoom': 14,
+      'paint': {
+        'fill-extrusion-color': '#aaa',
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          14,
+          0,
+          16,
+          ['get', 'height']
+        ],
+        'fill-extrusion-base': ['get', 'min_height'],
+        'fill-extrusion-opacity': 0.8
+      }
+    });
+  };
+
   return (
     <Map
       {...viewState}
       ref={mapRef}
       style={mapStyle}
-      mapStyle="mapbox://styles/mapbox/streets-v12"
+      mapStyle="mapbox://styles/mapbox/light-v11"
       mapboxAccessToken={MAPBOX_TOKEN}
       onMove={(evt: ViewStateChangeEvent) => setViewState(evt.viewState)}
       onMoveEnd={handleMoveEnd}
+      onLoad={onMapLoad}
+      terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+      fog={{
+        range: [0.8, 8],
+        color: '#ffffff',
+        'horizon-blend': 0.5
+      }}
     >
+      <ReactMapGL.Source
+        id="mapbox-dem"
+        type="raster-dem"
+        url="mapbox://mapbox.mapbox-terrain-dem-v1"
+        tileSize={512}
+        maxzoom={14}
+      />
       {markers.map((marker, index) => (
         <Marker
           key={index}

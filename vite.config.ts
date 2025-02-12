@@ -13,7 +13,18 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "client", "src"),
       "@shared": path.resolve(__dirname, "shared"),
+      "react-map-gl": path.resolve(__dirname, "node_modules/react-map-gl"),
+      "mapbox-gl": path.resolve(__dirname, "node_modules/mapbox-gl"),
     },
+  },
+  optimizeDeps: {
+    include: ['react-map-gl', 'mapbox-gl'],
+    esbuildOptions: {
+      // Node.js global to browser globalThis
+      define: {
+        global: 'globalThis'
+      }
+    }
   },
   root: path.resolve(__dirname, "client"),
   build: {
